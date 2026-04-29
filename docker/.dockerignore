@@ -1,0 +1,9 @@
+.venv
+.env
+*.log
+__pycache__
+.git
+.gitignore
+staging/*.csv
+clean/*.csv
+warehouse/*.csv

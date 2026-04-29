@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+
+  scraper:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.scraper
+    volumes:
+      - ../staging:/app/staging
+
+  cleaner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cleaner
+    volumes:
+      - ../staging:/app/staging
+      - ../clean:/app/clean
+    depends_on:
+      - scraper
+
+  warehouse:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.warehouse
+    volumes:
+      - ../clean:/app/clean
+      - ../warehouse:/app/warehouse
+    depends_on:
+      - cleaner
