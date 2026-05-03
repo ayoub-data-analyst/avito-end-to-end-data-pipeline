@@ -8,7 +8,7 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.chrome.options import Options
 
 log.basicConfig(
-    filename=r"C:\Users\HP\Desktop\web_scraping\logs\scrape_avito.log",
+    filename="/app/logs/scrape_avito.log",
     level=log.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%d/%m/%Y %H:%M:%S"
@@ -18,20 +18,22 @@ logger = log.getLogger()
 
 # Configure Selenium driver
 options = Options()
+options.add_argument("--headless")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-blink-features=AutomationControlled")
-
 
 driver = webdriver.Chrome(options=options)
 
 # Open Avito target URL
-driver.get("https://www.avito.ma/fr/maroc/appartements-%C3%A0_vendre?price=100000-&rooms=1&bathrooms=1&has_price=true&size=20-")
+driver.get("https://www.avito.ma/fr/maroc/appartements-%C3%A0_vendre?price=100000-1000000&rooms=1&bathrooms=1&has_price=true&size=20-1000")
 
 wait = WebDriverWait(driver, 10)
 
 results = []
 
 # Pagination scraping loop
-for page in range(100):
+for page in range(3):
 
     logger.info(f"Page {page+1} start")
 
@@ -113,7 +115,7 @@ driver.quit()
 
 # Export scraped data to CSV
 if results:
-    with open(r"C:\Users\HP\Desktop\web_scraping\staging\staging_avito_raw.csv", "w", newline="", encoding="utf-8") as f:
+    with open("/app/staging/staging_avito_raw_1.csv", "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=[
             "title", "price", "location", "surface", "rooms", "baths", "link"
         ])

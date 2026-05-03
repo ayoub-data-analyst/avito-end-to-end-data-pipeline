@@ -6,21 +6,21 @@ A fully automated data engineering pipeline that scrapes real estate listings fr
 
 ## Table of Contents
 
-* [Overview](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#overview)
-* [Architecture](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#architecture)
-* [Project Structure](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#project-structure)
-* [Pipeline Stages](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#pipeline-stages)
-  * [1. Scraping](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#1-scraping)
-  * [2. Cleaning](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#2-cleaning)
-  * [3. Warehousing](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#3-warehousing)
-* [Data Model](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#data-model)
-* [Getting Started](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#getting-started)
-  * [Prerequisites](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#prerequisites)
-  * [Environment Variables](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#environment-variables)
-  * [Running with Docker](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#running-with-docker)
-  * [Running Locally](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#running-locally)
-* [Sample Data](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#sample-data)
-* [Tech Stack](https://claude.ai/chat/f1d921a1-22ab-423d-9e7b-8a205ba85ef7#tech-stack)
+* [Overview](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#overview)
+* [Architecture](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#architecture)
+* [Project Structure](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#project-structure)
+* [Pipeline Stages](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#pipeline-stages)
+  * [1. Scraping](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#1-scraping)
+  * [2. Cleaning](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#2-cleaning)
+  * [3. Warehousing](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#3-warehousing)
+* [Data Model](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#data-model)
+* [Getting Started](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#getting-started)
+  * [Prerequisites](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#prerequisites)
+  * [Environment Variables](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#environment-variables)
+  * [Running with Docker](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#running-with-docker)
+  * [Running Locally](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#running-locally)
+* [Sample Data](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#sample-data)
+* [Tech Stack](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#tech-stack)
 
 ---
 
@@ -137,7 +137,6 @@ Transforms the raw staging CSV into an analysis-ready dataset using  **pandas** 
 | Deduplication       | Removes exact duplicate rows                                         |
 | Location parsing    | Splits `location`into `city`and `neighborhood`                 |
 | Type casting        | Converts `surface`,`rooms`,`baths`from text to integers        |
-| Outlier removal     | Drops listings with `surface > 500 m²`                            |
 | Feature engineering | Computes `price_meter = price / surface`                           |
 | Null handling       | Drops rows with missing `neighborhood`(~0.5%)                      |
 | Segmentation        | Assigns `price_category`:`Low`(≤500K),`Medium`,`High`(≥1M) |

@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load raw staging data
-df = pd.read_csv(r"C:\Users\HP\Desktop\web_scraping\staging\staging_avito_raw.csv")
+df = pd.read_csv("/app/staging/staging_avito_raw_1.csv")
 
 # Remove duplicate listings
 df = df.drop_duplicates()
@@ -12,11 +12,8 @@ df["neighborhood"] = df["location"].str.replace("Appartements dans", "").str.spl
 
 # Convert structured columns to numeric
 df["surface"] = df["surface"].str.replace("m²", "").str.strip().astype(int)
-df["rooms"] = df["rooms"].str.replace(r"chambres|chambre", "", regex=True).str.strip().astype(int)
-df["baths"] = df["baths"].str.replace(r"sdbs|sdb", "", regex=True).str.strip().astype(int)
-
-# Remove unrealistic surface outliers
-df = df[df["surface"] <= 500]
+df["rooms"] = df["rooms"].str.replace("chambres?", "", regex=True).str.strip().astype(int)
+df["baths"] = df["baths"].str.replace("sdbs?", "", regex=True).str.strip().astype(int)
 
 # Feature engineering: price per m²
 df["price_meter"] = (df["price"] / df["surface"]).astype(int)
@@ -36,4 +33,4 @@ def price_category(price):
 df["price_category"] = df["price"].apply(price_category)
 
 # Export cleaned dataset
-df.to_csv(r"C:\Users\HP\Desktop\web_scraping\clean\avito_data_clean.csv", index=False)
+df.to_csv("/app/clean/avito_data_clean_1.csv", index=False)
