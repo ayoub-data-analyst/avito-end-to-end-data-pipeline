@@ -1,74 +1,25 @@
+
 # Avito End-to-End Data Pipeline
 
-A fully automated data engineering pipeline that scrapes real estate listings from [Avito.ma](https://www.avito.ma/), cleans and enriches the data, and loads it into a PostgreSQL data warehouse — with two separate schemas optimized for **Business Intelligence** and  **Machine Learning** .
+A fully containerized data pipeline that scrapes real estate listings from [Avito.ma](https://www.avito.ma/), cleans and enriches the data, and loads it into a PostgreSQL data warehouse with two schemas — one optimized for BI/analytics and one for machine learning.
 
 ---
 
-## Table of Contents
-
-* [Overview](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#overview)
-* [Architecture](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#architecture)
-* [Project Structure](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#project-structure)
-* [Pipeline Stages](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#pipeline-stages)
-  * [1. Scraping](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#1-scraping)
-  * [2. Cleaning](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#2-cleaning)
-  * [3. Warehousing](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#3-warehousing)
-* [Data Model](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#data-model)
-* [Getting Started](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#getting-started)
-  * [Prerequisites](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#prerequisites)
-  * [Environment Variables](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#environment-variables)
-  * [Running with Docker](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#running-with-docker)
-  * [Running Locally](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#running-locally)
-* [Sample Data](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#sample-data)
-* [Tech Stack](https://claude.ai/chat/48f60e0e-b334-4f41-8aa5-ba18b1ae3fcd#tech-stack)
-
----
-
-## Overview
-
-This project implements a complete **ETL pipeline** for Moroccan apartment listings scraped from Avito.ma. It targets apartments for sale with at least 1 bedroom, 1 bathroom, and a minimum surface of 20 m².
-
-The pipeline runs end-to-end across three stages:
-
-| Stage               | Input               | Output                                   |
-| ------------------- | ------------------- | ---------------------------------------- |
-| **Scrape**    | Avito.ma (live web) | `staging/staging_avito_raw.csv`        |
-| **Clean**     | Raw CSV             | `clean/avito_data_clean.csv`           |
-| **Warehouse** | Clean CSV           | PostgreSQL (`bi_schema`+`ml_schema`) |
-
----
-
-## Architecture
+## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Avito.ma (Web Source)                     │
-└──────────────────────────┬──────────────────────────────────┘
-                           │  Selenium scraper (100 pages)
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│             staging/staging_avito_raw.csv                    │
-│        title | price | location | surface | rooms | baths   │
-└──────────────────────────┬──────────────────────────────────┘
-                           │  Pandas cleaning & feature engineering
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│               clean/avito_data_clean.csv                     │
-│   + city | neighborhood | price_meter | price_category       │
-└──────────────┬────────────────────────────┬─────────────────┘
-               │                            │
-               ▼                            ▼
-┌──────────────────────┐      ┌──────────────────────────────┐
-│  PostgreSQL          │      │  PostgreSQL                  │
-│  bi_schema           │      │  ml_schema                   │
-│  (Star Schema)       │      │  (One Big Table)             │
-│                      │      │                              │
-│  dim_location        │      │  obt_avito_annonce           │
-│  dim_price_category  │      │  (flat, ML-ready)            │
-│  dim_property        │      └──────────────────────────────┘
-│  fact_annonce        │
-└──────────────────────┘
+[Avito.ma] ──scrape──> [Staging CSV] ──clean──> [Clean CSV] ──load──> [PostgreSQL]
+                                                                      ├── bi_schema  (Star Schema)
+                                                                      └── ml_schema  (OBT)
 ```
+
+The pipeline runs as three sequential Docker services:
+
+| Stage | Service       | Script                 | Description                                         |
+| ----- | ------------- | ---------------------- | --------------------------------------------------- |
+| 1     | `scraper`   | `scrape/scraping.py` | Headless Selenium scraper, paginates Avito listings |
+| 2     | `cleaner`   | `clean/cleaning.py`  | Cleans, parses, and feature-engineers the raw data  |
+| 3     | `warehouse` | `warehouse/main.py`  | Loads data into PostgreSQL via BI and ML pipelines  |
 
 ---
 
@@ -76,131 +27,70 @@ The pipeline runs end-to-end across three stages:
 
 ```
 avito-end-to-end-data-pipeline/
-│
 ├── scrape/
-│   └── scraping.py            # Selenium-based web scraper
-│
+│   └── scraping.py          # Selenium scraper → staging CSV
 ├── clean/
-│   ├── cleaning.py            # Data cleaning & feature engineering
-│   └── avito_data_clean.csv   # Cleaned dataset (output)
-│
+│   ├── cleaning.py          # Pandas cleaning → clean CSV
+│   └── avito_data_clean.csv # Sample clean output
 ├── staging/
-│   └── staging_avito_raw.csv  # Raw scraped data (output)
-│
+│   └── staging_avito_raw.csv # Sample raw output
 ├── warehouse/
-│   ├── bi_pipeline.py         # Star schema loader (BI)
-│   ├── ml_pipeline.py         # OBT loader (ML)
-│   └── main.py                # Orchestrator — runs both pipelines
-│
+│   ├── main.py              # Orchestrator (runs BI + ML pipelines)
+│   ├── bi_pipeline.py       # Star schema loader (bi_schema)
+│   └── ml_pipeline.py       # OBT loader (ml_schema)
 ├── docker/
+│   ├── docker-compose.yml
 │   ├── Dockerfile.scraper
 │   ├── Dockerfile.cleaner
-│   ├── Dockerfile.warehouse
-│   └── docker-compose.yml
-│
-├── requirements.txt
-└── README.md
+│   └── Dockerfile.warehouse
+└── requirements.txt
 ```
 
 ---
 
 ## Pipeline Stages
 
-### 1. Scraping
+### Stage 1 — Scraping (`scrape/scraping.py`)
 
-**File:** `scrape/scraping.py`
+Uses **Selenium** in headless Chrome mode to scrape apartment-for-sale listings from Avito.ma.
 
-Uses **Selenium** with Chrome to scrape apartment listings from Avito.ma across up to 100 pages. The scraper:
+* Filters: price 100k–1M MAD, 1 bedroom, 1 bathroom, surface 20–1000 m²
+* Paginates across multiple pages with scroll-to-load behavior
+* Extracts per listing: `title`, `price`, `location`, `surface`, `rooms`, `baths`, `link`
+* Outputs to: `staging/staging_avito_raw_1.csv`
+* Logs to: `/app/logs/scrape_avito.log`
 
-* Scrolls each page to trigger lazy-loaded listing cards
-* Extracts: `title`, `price`, `location`, `surface`, `rooms`, `baths`, `link`
-* Navigates to the next page via URL pagination
-* Logs progress and errors to `logs/scrape_avito.log`
-* Exports raw results to `staging/staging_avito_raw.csv`
+### Stage 2 — Cleaning (`clean/cleaning.py`)
 
-**Target URL:**
+Uses **Pandas** to transform raw staging data into an analysis-ready dataset.
 
-```
-https://www.avito.ma/fr/maroc/appartements-à_vendre?price=100000-&rooms=1&bathrooms=1&has_price=true&size=20-
-```
+* Removes duplicate listings
+* Parses `location` into `city` and `neighborhood`
+* Converts `surface`, `rooms`, `baths` from text to integers
+* Engineers `price_meter` (price per m²)
+* Adds `price_category` segmentation: `Low` (≤500k), `Medium`, `High` (≥1M)
+* Drops rows with null `neighborhood` (~0.5% of data)
+* Outputs to: `clean/avito_data_clean_1.csv`
 
----
+### Stage 3 — Warehouse (`warehouse/`)
 
-### 2. Cleaning
+Connects to PostgreSQL via **SQLAlchemy** and loads data into two schemas:
 
-**File:** `clean/cleaning.py`
-
-Transforms the raw staging CSV into an analysis-ready dataset using  **pandas** :
-
-| Step                | Description                                                          |
-| ------------------- | -------------------------------------------------------------------- |
-| Deduplication       | Removes exact duplicate rows                                         |
-| Location parsing    | Splits `location`into `city`and `neighborhood`                 |
-| Type casting        | Converts `surface`,`rooms`,`baths`from text to integers        |
-| Feature engineering | Computes `price_meter = price / surface`                           |
-| Null handling       | Drops rows with missing `neighborhood`(~0.5%)                      |
-| Segmentation        | Assigns `price_category`:`Low`(≤500K),`Medium`,`High`(≥1M) |
-
-Output: `clean/avito_data_clean.csv`
-
----
-
-### 3. Warehousing
-
-**File:** `warehouse/main.py` (orchestrates both sub-pipelines)
-
-#### BI Pipeline — `warehouse/bi_pipeline.py`
-
-Loads data into a **star schema** under `bi_schema` in PostgreSQL, optimized for BI dashboards and OLAP queries:
+**`bi_schema` — Star Schema** (for dashboards / BI tools)
 
 ```
-bi_schema
-├── dim_location       (location_id, city, neighborhood)
-├── dim_price_category (price_category_id, price_category)
-├── dim_property       (property_id, title, link)
-└── fact_annonce       (annonce_id, location_id, price_category_id,
-                        property_id, price, surface, rooms, baths, price_meter)
+fact_annonce
+ ├── dim_location       (city, neighborhood)
+ ├── dim_property       (title, link)
+ └── dim_price_category (Low / Medium / High)
 ```
 
-#### ML Pipeline — `warehouse/ml_pipeline.py`
-
-Loads data into a flat **One Big Table (OBT)** under `ml_schema`, optimized for machine learning feature extraction:
+**`ml_schema` — One Big Table** (for model training)
 
 ```
-ml_schema
-└── obt_avito_annonce  (annonce_id, title, price, location, surface,
-                        rooms, baths, link, city, neighborhood,
-                        price_meter, price_category)
-```
-
-Both pipelines use `TRUNCATE ... RESTART IDENTITY CASCADE` before loading to ensure idempotent, repeatable runs.
-
----
-
-## Data Model
-
-### Star Schema (`bi_schema`)
-
-```
-         dim_location
-         ┌───────────────┐
-         │ location_id PK│◄──┐
-         │ city          │   │
-         │ neighborhood  │   │
-         └───────────────┘   │
-                             │
-dim_price_category           │    fact_annonce
-┌──────────────────┐         │   ┌─────────────────────┐
-│ price_category_id│◄────────┼───│ annonce_id PK        │
-│ price_category   │         │   │ location_id FK        │
-└──────────────────┘         └───│ price_category_id FK  │
-                                 │ property_id FK        │
-         dim_property        ┌───│ price                 │
-         ┌───────────────┐   │   │ surface               │
-         │ property_id PK│◄──┘   │ rooms                 │
-         │ title         │       │ baths                 │
-         │ link          │       │ price_meter           │
-         └───────────────┘       └─────────────────────┘
+obt_avito_annonce
+  title, price, location, surface, rooms, baths,
+  city, neighborhood, price_meter, price_category
 ```
 
 ---
@@ -209,86 +99,94 @@ dim_price_category           │    fact_annonce
 
 ### Prerequisites
 
-* Python 3.10+
-* Google Chrome + ChromeDriver (for scraping)
-* PostgreSQL (local or remote)
-* Docker & Docker Compose (optional, for containerized run)
+* [Docker](https://www.docker.com/) and Docker Compose
+* A running PostgreSQL instance reachable by the `warehouse` container
 
-### Environment Variables
+### 1. Configure Environment Variables
 
-Create a `.env` file at the project root:
+Create a `.env` file in the project root:
 
 ```env
-DB_USER=your_postgres_user
-DB_PASSWORD=your_postgres_password
-DB_HOST=localhost
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_HOST=your_db_host
 DB_PORT=5432
-DB_NAME=avito_db
+DB_NAME=your_db_name
 ```
 
-> ⚠️ Never commit your `.env` file. It is already listed in `.gitignore`.
-
-### Running with Docker
-
-The project includes three Dockerfiles and a Compose file that run the pipeline stages in order, with dependency management:
+### 2. Run the Full Pipeline
 
 ```bash
 cd docker
 docker-compose up --build
 ```
 
-Services run in sequence: `scraper` → `cleaner` → `warehouse`.
+Docker Compose will run the three services in order: `scraper` → `cleaner` → `warehouse`.
 
-Shared CSV files are exchanged via mounted volumes (`staging/` and `clean/`).
-
-### Running Locally
-
-**Step 1 — Install dependencies:**
+### 3. Run Stages Individually
 
 ```bash
-pip install -r requirements.txt
-```
+# Scraper only
+docker build -f docker/Dockerfile.scraper -t avito-scraper .
+docker run --rm -v $(pwd)/staging:/app/staging avito-scraper
 
-**Step 2 — Scrape listings:**
+# Cleaner only
+docker build -f docker/Dockerfile.cleaner -t avito-cleaner .
+docker run --rm -v $(pwd)/staging:/app/staging -v $(pwd)/clean:/app/clean avito-cleaner
 
-```bash
-python scrape/scraping.py
-```
-
-**Step 3 — Clean the data:**
-
-```bash
-python clean/cleaning.py
-```
-
-**Step 4 — Load to PostgreSQL:**
-
-```bash
-python warehouse/main.py
+# Warehouse only (requires .env)
+docker build -f docker/Dockerfile.warehouse -t avito-warehouse .
+docker run --rm --env-file .env -v $(pwd)/clean:/app/clean avito-warehouse
 ```
 
 ---
 
-## Sample Data
+## Dependencies
 
-Preview of `clean/avito_data_clean.csv`:
+Key packages (see `requirements.txt` for pinned versions):
 
-| title                                     | price     | city       | neighborhood | surface | rooms | baths | price_meter | price_category |
-| ----------------------------------------- | --------- | ---------- | ------------ | ------- | ----- | ----- | ----------- | -------------- |
-| Appartement à vendre 61 m² à Marrakech | 1,530,000 | Marrakech  | Guéliz      | 61      | 1     | 1     | 25,081      | High           |
-| Appartement 95m2 vendables - Palmier      | 1,750,000 | Casablanca | Palmier      | 95      | 2     | 2     | 18,421      | High           |
-| Vente Appartement 4 pièces de 190 m2     | 3,800,000 | Casablanca | Racine       | 190     | 3     | 2     | 20,000      | High           |
+| Package           | Purpose                          |
+| ----------------- | -------------------------------- |
+| `selenium`      | Browser automation for scraping  |
+| `pandas`        | Data cleaning and transformation |
+| `sqlalchemy`    | PostgreSQL ORM / connection      |
+| `python-dotenv` | Environment variable loading     |
+| `numpy`         | Numeric operations               |
+| `psycopg2`      | PostgreSQL driver                |
 
 ---
 
-## Tech Stack
+## Data Schema Reference
 
-| Layer              | Tool                           |
-| ------------------ | ------------------------------ |
-| Scraping           | Python, Selenium, ChromeDriver |
-| Data Processing    | pandas                         |
-| Data Warehouse     | PostgreSQL                     |
-| ORM / DB Connector | SQLAlchemy                     |
-| Containerization   | Docker, Docker Compose         |
-| Logging            | Python `logging`module       |
-| Config Management  | `python-dotenv`              |
+### Raw Staging Schema
+
+| Column       | Type   | Description                       |
+| ------------ | ------ | --------------------------------- |
+| `title`    | string | Listing title                     |
+| `price`    | int    | Price in MAD                      |
+| `location` | string | Raw location string from Avito    |
+| `surface`  | string | Surface area (e.g.`"85 m²"`)   |
+| `rooms`    | string | Room count (e.g.`"3 chambres"`) |
+| `baths`    | string | Bathroom count (e.g.`"2 sdb"`)  |
+| `link`     | string | URL to the listing                |
+
+### Clean Schema (adds)
+
+| Column             | Type   | Description                   |
+| ------------------ | ------ | ----------------------------- |
+| `city`           | string | Parsed city name              |
+| `neighborhood`   | string | Parsed neighborhood name      |
+| `surface`        | int    | Surface area in m² (numeric) |
+| `rooms`          | int    | Number of bedrooms (numeric)  |
+| `baths`          | int    | Number of bathrooms (numeric) |
+| `price_meter`    | int    | Price per m²                 |
+| `price_category` | string | `Low`/`Medium`/`High`   |
+
+---
+
+## Notes
+
+* The scraper targets apartment listings with `has_price=true`, so all records in staging have a valid price.
+* The warehouse pipelines use `TRUNCATE ... RESTART IDENTITY CASCADE` before each load, making every run a full refresh.
+* Log files are written inside the container at `/app/logs/`. Mount a volume there to persist them on the host.
+* The `bi_pipeline.py` and `ml_pipeline.py` files currently contain hardcoded Windows paths for local log files — these are overridden in the Docker environment by the container paths set in `logging.basicConfig`. When running locally outside Docker, update those paths to match your system.
