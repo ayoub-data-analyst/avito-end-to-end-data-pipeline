@@ -2,8 +2,12 @@
 .env
 *.log
 __pycache__
+*.pyc
 .git
 .gitignore
+.vscode
+.idea
 staging/*.csv
 clean/*.csv
 warehouse/*.csv
+logs/
