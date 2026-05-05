@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 logging.basicConfig(
-    filename=r"C:\Users\HP\Desktop\web_scraping\logs\BI.log",
+    filename="logs/Bi.log",
     filemode="a",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -76,7 +76,7 @@ with engine.begin() as conn:
     '''))
 
 # Load cleaned data from CSV
-df = pd.read_csv(r"C:\Users\HP\Desktop\web_scraping\clean\avito_data_clean.csv")
+df = pd.read_csv("clean/avito_data_clean.csv")
 
 # Select star schema dimensions
 df_dim_location = df[["city", "neighborhood"]].drop_duplicates()

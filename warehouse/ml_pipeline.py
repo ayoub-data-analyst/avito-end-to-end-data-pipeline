@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 logging.basicConfig(
-    filename=r"C:\Users\HP\Desktop\web_scraping\logs\Ml.log",
+    filename="logs/Ml.log",
     filemode="a",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -56,7 +56,7 @@ with engine.begin() as conn:
     '''))
 
 # Load cleaned data from CSV
-df = pd.read_csv(r"C:\Users\HP\Desktop\web_scraping\clean\avito_data_clean.csv")
+df = pd.read_csv("clean/avito_data_clean.csv")
 
 # Select OBT columns for ml_schema
 df_obt_avito_annonce = df[[

@@ -33,7 +33,7 @@ wait = WebDriverWait(driver, 10)
 results = []
 
 # Pagination scraping loop
-for page in range(3):
+for page in range(100):
 
     logger.info(f"Page {page+1} start")
 
@@ -115,7 +115,7 @@ driver.quit()
 
 # Export scraped data to CSV
 if results:
-    with open("/app/staging/staging_avito_raw_1.csv", "w", newline="", encoding="utf-8") as f:
+    with open("/app/staging/staging_avito_raw.csv", "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=[
             "title", "price", "location", "surface", "rooms", "baths", "link"
         ])
@@ -123,7 +123,5 @@ if results:
         writer.writerows(results)
 
     logger.info(f"CSV saved with {len(results)} rows")
-    print("CSV saved")
 else:
     logger.warning("No data collected")
-    print("No data")
